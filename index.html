@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOZA Tracker</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
+        #data { margin-top: 20px; padding: 15px; border: 1px solid #ccc; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <h1>🐐 KOZA Tracker 🐐</h1>
+    <p>Нажмите кнопку, чтобы подключиться к базовой станции KOZA_BASE и получать данные.</p>
+
+    <button id="connectButton">Найти и Подключиться</button>
+    <p id="status">Статус: Ожидание подключения</p>
+    
+    <div id="data">
+        <h3>Полученные данные:</h3>
+        <p>ID Козы: <span id="koza_id">--</span></p>
+        <p>Координаты: <span id="koza_coords">--</span></p>
+        <p>Заряд Козы: <span id="koza_battery">--</span></p>
+        <p>Заряд Базы: <span id="base_battery">--</span></p>
+        <p>Спутники/RSSI: <span id="sat_rssi">--</span></p>
+    </div>
+
+    <script>
+        // UUIDs из вашего ESP32 скетча
+        const SERVICE_UUID = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E';
+        const TX_CHAR_UUID = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E';
+
+        document.getElementById('connectButton').addEventListener('click', connectToESP32);
+
+        function updateStatus(text) {
+            document.getElementById('status').innerText = 'Статус: ' + text;
+        }
+
+        async function connectToESP32() {
+            updateStatus('Ищу "KOZA_BASE"...');
+            try {
+                // 1. Запрашиваем устройство
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'KOZA_BASE' }], 
+                    optionalServices: [SERVICE_UUID]
+                });
+
+                updateStatus('Подключение...');
+                
+                // 2. Подключаемся к серверу
+                const server = await device.gatt.connect();
+
+                // 3. Получаем сервис
+                const service = await server.getPrimaryService(SERVICE_UUID);
+
+                // 4. Получаем характеристику для уведомлений
+                const characteristic = await service.getCharacteristic(TX_CHAR_UUID);
+
+                // 5. Включаем уведомления и назначаем функцию обработки
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+
+                updateStatus('Подключено! Ожидание данных...');
+
+            } catch(error) {
+                updateStatus(`ОШИБКА: ${error.name}. Проверьте Bluetooth и HTTPS.`);
+                console.error('Ошибка BLE:', error);
+            }
+        }
+
+        // 6. Обработка полученных данных
+        function handleNotifications(event) {
+            const value = event.target.value;
+            const dataString = new TextDecoder('utf-8').decode(value);
+            
+            try {
+                // Превращаем JSON-строку в объект
+                const data = JSON.parse(dataString);
+                
+                // Обновляем данные на странице
+                document.getElementById('koza_id').innerText = data.id;
+                document.getElementById('koza_coords').innerText = `${data.lat}, ${data.lng}`;
+                document.getElementById('koza_battery').innerText = `${data.battery}% (${data.satellites} Sat)`;
+                document.getElementById('base_battery').innerText = `${data.base_battery}%`;
+                document.getElementById('sat_rssi').innerText = `RSSI: ${data.rssi}`;
+                
+                updateStatus(`Подключено. Обновлено в: ${new Date().toLocaleTimeString()}`);
+                
+            } catch (e) {
+                console.error('Неправильный формат данных:', e);
+            }
+        }
+    </script>
+
+</body>
+</html>
+
