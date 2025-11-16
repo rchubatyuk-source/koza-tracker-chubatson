@@ -75,8 +75,7 @@
             
             try {
                 // 1. Запрашиваем устройство. 
-                // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: В filters оставляем ТОЛЬКО имя. 
-                // Если мы ставим полный UUID сюда, Chrome выдает ошибку "Invalid Service name" (как на вашем скриншоте).
+                // ИСПРАВЛЕНИЕ: В filters оставляем ТОЛЬКО имя, чтобы не вызывать ошибку "Invalid Service name".
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'KOZA_BASE' }], 
                     optionalServices: [SERVICE_UUID] 
@@ -143,5 +142,3 @@
 
 </body>
 </html>
-
-
