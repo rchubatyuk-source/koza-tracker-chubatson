@@ -54,9 +54,9 @@
     </div>
 
     <script>
-        // UUIDs, взятые из вашего ESP32 скетча (BLE)
-        const SERVICE_UUID = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E';
-        const TX_CHAR_UUID = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E';
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 1: Все буквы в UUID теперь в нижнем регистре (lowercase hex characters).
+        const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
         document.getElementById('connectButton').addEventListener('click', connectToESP32);
 
@@ -74,8 +74,8 @@
             updateStatus('Ищу "KOZA_BASE"...');
             
             try {
-                // 1. Запрашиваем устройство. 
-                // ИСПРАВЛЕНИЕ: В filters оставляем ТОЛЬКО имя, чтобы не вызывать ошибку "Invalid Service name".
+                // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 2: В filters оставлено ТОЛЬКО имя устройства. 
+                // UUID перемещен в optionalServices, чтобы устранить ошибку "Invalid Service name".
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'KOZA_BASE' }], 
                     optionalServices: [SERVICE_UUID] 
