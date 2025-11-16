@@ -74,10 +74,11 @@
             updateStatus('Ищу "KOZA_BASE"...');
             
             try {
-                // 1. Запрашиваем устройство. Телефон должен показать окно выбора.
+                // 1. Запрашиваем устройство. 
+                // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Мы ищем только по имени, чтобы Chrome не выдавал ошибку "Invalid Service name"
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'KOZA_BASE' }], 
-                    optionalServices: [SERVICE_UUID]
+                    optionalServices: [SERVICE_UUID] // UUID остается в optionalServices, как требуется
                 });
                 
                 // Если пользователь отменил выбор, выходим
