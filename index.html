@@ -1,144 +1,411 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KOZA Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; background-color: #f4f4f9; }
-        h1 { color: #333; }
-        button { 
-            padding: 15px 30px; 
-            font-size: 18px; 
-            cursor: pointer; 
-            background-color: #4CAF50; 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            transition: background-color 0.3s;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            overflow: hidden;
+        }
+        
+        #map {
+            width: 100vw;
+            height: 55vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .info-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 45vh;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 10px;
+            overflow-y: auto;
+        }
+        
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+            padding: 6px;
+            background: #2a2a2a;
+            border-radius: 5px;
+        }
+        
+        .battery {
+            font-weight: bold;
+        }
+        
+        .battery.high { color: #4CAF50; }
+        .battery.medium { color: #FF9800; }
+        .battery.low { color: #F44336; }
+        
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 3px 0;
+        }
+        
+        .btn-connect {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-disconnect {
+            background: #F44336;
+            color: white;
+        }
+        
+        .btn-zone {
+            background: #2196F3;
+            color: white;
+            font-size: 12px;
+            padding: 8px;
+        }
+        
+        .btn-polygon {
+            background: #9C27B0;
+            color: white;
+        }
+        
+        .btn-home {
+            background: #FF5722;
+            color: white;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 8px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .status.connected { background: #1b5e20; }
+        .status.disconnected { background: #b71c1c; }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+        
+        .alarm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(244, 67, 54, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: pulse 1s infinite;
+        }
+        
+        .alarm-overlay.active {
+            display: flex;
+        }
+        
+        .alarm-content {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .alarm-content h1 {
+            font-size: 32px;
             margin-bottom: 20px;
         }
-        button:hover { background-color: #45a049; }
-        #data { 
-            margin-top: 20px; 
-            padding: 20px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            background-color: white;
-            text-align: left; 
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        
+        .alarm-content button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: white;
+            color: #F44336;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
         }
-        #status { font-weight: bold; color: #555; }
-        #koza_coords { color: #007bff; }
-        .goat-icon { font-size: 24px; margin-right: 5px; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .distance-info {
+            background: #1565C0;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 5px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .draw-mode {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(156, 39, 176, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .draw-mode.active {
+            display: block;
+        }
+        
+        .draw-mode button {
+            margin: 0 5px;
+            padding: 10px 15px;
+            background: white;
+            color: #9C27B0;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .zone-list {
+            background: #2a2a2a;
+            padding: 8px;
+            border-radius: 5px;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .zone-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            background: #3a3a3a;
+            margin: 3px 0;
+            border-radius: 3px;
+        }
+        
+        .zone-item button {
+            background: #F44336;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .map-selector {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px;
+            border-radius: 8px;
+        }
+        
+        .map-selector button {
+            background: #2a2a2a;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 2px;
+            border-radius: 5px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .map-selector button.active {
+            background: #4CAF50;
+        }
     </style>
 </head>
 <body>
-
-    <h1><span class="goat-icon">🐐</span> KOZA Tracker <span class="goat-icon">🐐</span></h1>
-    <p>Нажмите кнопку, чтобы подключиться к базовой станции **KOZA_BASE** и получать данные.</p>
-
-    <button id="connectButton">Найти и Подключиться</button>
-    <p id="status">Статус: Ожидание подключения</p>
+    <div id="map"></div>
     
-    <div id="data">
-        <h3>Полученные данные:</h3>
-        <p>ID Козы: <span id="koza_id">--</span></p>
-        <p>Координаты (Ш/Д): <span id="koza_coords">--</span></p>
-        <p>Заряд Козы: <span id="koza_battery">--</span></p>
-        <p>Заряд Базы: <span id="base_battery">--</span></p>
-        <p>Спутники/RSSI: <span id="sat_rssi">--</span></p>
+    <div class="map-selector">
+        <button id="mapStandard" class="active" onclick="changeMap('standard')">🗺️ Карта</button>
+        <button id="mapSatellite" onclick="changeMap('satellite')">🛰️ Спутник</button>
+        <button id="mapHybrid" onclick="changeMap('hybrid')">🌍 Гибрид</button>
+    </div>
+    
+    <div class="draw-mode" id="drawMode">
+        <div style="margin-bottom: 10px; font-weight: bold;">📐 Нажимайте на карту чтобы создать точки геозоны</div>
+        <button onclick="finishPolygon()">✓ Завершить</button>
+        <button onclick="cancelPolygon()">✕ Отмена</button>
+    </div>
+    
+    <div class="alarm-overlay" id="alarm">
+        <div class="alarm-content">
+            <h1>🚨 ТРЕВОГА! 🚨</h1>
+            <p id="alarmText" style="font-size: 20px; margin: 20px 0;"></p>
+            <button onclick="closeAlarm()">OK, ПОНЯЛ</button>
+        </div>
+    </div>
+    
+    <div class="info-panel">
+        <h2>🐐 KOZA Tracker</h2>
+        
+        <div id="status" class="status disconnected">
+            Не подключено
+        </div>
+        
+        <button id="connectBtn" class="btn btn-connect" onclick="connectBLE()">
+            🔗 Подключиться
+        </button>
+        
+        <button id="disconnectBtn" class="btn btn-disconnect" onclick="disconnectBLE()" style="display:none;">
+            ✂️ Отключиться
+        </button>
+        
+        <div class="distance-info" id="distance">
+            📏 Расстояние до козы: --
+        </div>
+        
+        <div class="status-row">
+            <span>🐐 ID:</span>
+            <span id="koza-id">--</span>
+        </div>
+        
+        <div class="status-row">
+            <span>📍 Координаты:</span>
+            <span id="coords" style="font-size: 11px;">--</span>
+        </div>
+        
+        <div class="status-row">
+            <span>🔋 Коза:</span>
+            <span class="battery" id="koza-battery">--</span>
+        </div>
+        
+        <div class="status-row">
+            <span>📱 База:</span>
+            <span class="battery" id="base-battery">--</span>
+        </div>
+        
+        <div class="status-row">
+            <span>🛰️ Спутники:</span>
+            <span id="satellites">--</span>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-polygon" onclick="startDrawPolygon()">📐 Загородка</button>
+            <button class="btn btn-home" onclick="addHomeZone()">🏠 База</button>
+            <button class="btn btn-zone" onclick="centerOnKoza()">🎯 Коза</button>
+            <button class="btn btn-zone" onclick="clearZones()">🗑️ Очистить</button>
+        </div>
+        
+        <div class="zone-list" id="zoneList" style="display:none;">
+            <div style="font-weight: bold; margin-bottom: 5px;">Активные геозоны:</div>
+            <div id="zones"></div>
+        </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 1: Все буквы в UUID теперь в нижнем регистре (lowercase hex characters).
-        const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-        const TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
-
-        document.getElementById('connectButton').addEventListener('click', connectToESP32);
-
-        function updateStatus(text) {
-            document.getElementById('status').innerText = 'Статус: ' + text;
-        }
-
-        async function connectToESP32() {
-            // ПРОВЕРКА: Если Web Bluetooth не поддерживается
-            if (!navigator.bluetooth) {
-                updateStatus('ОШИБКА: Web Bluetooth не поддерживается этим устройством или браузером.');
-                return;
-            }
-            
-            updateStatus('Ищу "KOZA_BASE"...');
-            
-            try {
-                // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 2: В filters оставлено ТОЛЬКО имя устройства. 
-                // UUID перемещен в optionalServices, чтобы устранить ошибку "Invalid Service name".
-                const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'KOZA_BASE' }], 
-                    optionalServices: [SERVICE_UUID] 
-                });
-                
-                // Если пользователь отменил выбор, выходим
-                if (!device) {
-                    updateStatus('Подключение отменено пользователем.');
-                    return;
-                }
-
-                updateStatus('Подключение...');
-                
-                // 2. Подключаемся к GATT-серверу
-                const server = await device.gatt.connect();
-
-                // 3. Получаем Сервис (Nordic UART Service)
-                const service = await server.getPrimaryService(SERVICE_UUID);
-
-                // 4. Получаем Характеристику для уведомлений (TX)
-                const characteristic = await service.getCharacteristic(TX_CHAR_UUID);
-
-                // 5. Включаем уведомления и назначаем функцию обработки
-                await characteristic.startNotifications();
-                characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-
-                updateStatus('Подключено! Ожидание данных...');
-
-                // Дополнительно: обработчик отключения
-                device.addEventListener('gattserverdisconnected', () => {
-                    updateStatus('ОТКЛЮЧЕНО. Попробуйте снова нажать "Найти и Подключиться".');
-                });
-
-            } catch(error) {
-                // Выводим имя и сообщение ошибки
-                updateStatus(`ОШИБКА: ${error.name}. (${error.message || 'Проверьте GPS, Bluetooth и разрешения Chrome.'})`);
-                console.error('Ошибка BLE:', error);
-            }
-        }
-
-        // 6. Обработка полученных данных, приходящих из ESP32 (JSON)
-        function handleNotifications(event) {
-            const value = event.target.value;
-            const dataString = new TextDecoder('utf-8').decode(value);
-            
-            try {
-                // Превращаем JSON-строку в объект
-                const data = JSON.parse(dataString);
-                
-                // Обновляем данные на странице
-                document.getElementById('koza_id').innerText = data.id;
-                document.getElementById('koza_coords').innerText = `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`;
-                document.getElementById('koza_battery').innerText = `${data.battery}% (${data.satellites} Sat)`;
-                document.getElementById('base_battery').innerText = `${data.base_battery}%`;
-                document.getElementById('sat_rssi').innerText = `RSSI: ${data.rssi}`;
-                
-                updateStatus(`Подключено. Обновлено в: ${new Date().toLocaleTimeString()}`);
-                
-            } catch (e) {
-                console.error('Неправильный формат данных:', e);
-            }
-        }
-    </script>
-
-</body>
-</html>
+        let map, kozaMarker, myMarker, accuracyCircle;
+        let bleDevice = null;
+        let bleCharacteristic = null;
+        let zones = [];
+        let kozaData = { lat: 0, lng: 0, id: 0, battery: 0, satellites: 0, baseBattery: 0, rssi: 0 };
+        let myPosition = { lat: 0, lng: 0 };
+        let alarmShown = {};
+        
+        let drawingMode = false;
+        let polygonPoints = [];
+        let tempMarkers = [];
+        let tempLines = [];
+        
+        let currentLayer = null;
+        let mapLayers = {};
+        
+        // Инициализация карты
+        map = L.map('map').setView([49.097202, 132.479824], 15);
+        
+        // Создаём разные слои карт
+        mapLayers.standard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        });
+        
+        mapLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: '© Esri'
+        });
+        
+        mapLayers.hybrid = L.layerGroup([
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19
+            }),
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png', {
+                maxZoom: 19
+            })
+        ]);
+        
+        // Добавляем стандартную карту по умолчанию
+        currentLayer = mapLayers.standard;
+        currentLayer.addTo(map);
+        
+        // Маркер козы
+        const kozaIcon = L.divIcon({
+            html: '<div style="background: #4CAF50; width: 50px; height: 50px; border-radius: 50%; border: 5px solid white; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 20px rgba(76,175,80,0.7);">🐐</div>',
+            iconSize: [50, 50],
+            iconAnchor: [25, 25]
+        });
+        
+        kozaMarker = L.marker([49.097202, 132.479824], { icon: kozaIcon }).addTo(map)
+            .bindPopup('<b>КОЗА #77</b><br>Ожидание данных...');
+        
+        // Маркер моей позиции
+        const myIcon = L.divIcon({
+            html: '<div style="background: #2196F3; width: 30px; height: 30px; border-radius: 50%; border: 4px solid white; box-shadow: 0 2px 15px rgba(33,150,243,0.7);"></div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        
+        myMarker = L.marker([49.097202, 132.479824], { icon: myIcon }).addTo(map)
+            .bindPopup('<b>🏠 Моя позиция</b>');
+        
+        accuracyCircle = L.circle([49.097202, 132.479824], {
+            radius: 50,
+            color: '#2196F3',
+            fillColor: '#2196F3',
+            fillOpacity: 0.1
