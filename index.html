@@ -26,6 +26,8 @@
             position: absolute;
             top: 0;
             left: 0;
+            /* Важно для отображения карты */
+            z-index: 1; 
         }
         
         .info-panel {
@@ -37,6 +39,7 @@
             background: rgba(0, 0, 0, 0.95);
             padding: 10px;
             overflow-y: auto;
+            z-index: 10; /* Поверх карты */
         }
         
         .status-row {
@@ -341,6 +344,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // --- 1. ПЕРЕМЕННЫЕ И НАСТРОЙКИ ---
         let map, kozaMarker, myMarker, accuracyCircle;
         let bleDevice = null;
         let bleCharacteristic = null;
@@ -356,6 +360,12 @@
         
         let currentLayer = null;
         let mapLayers = {};
+
+        // UUID для стандартного Bluetooth Serial Port Profile (SPP)
+        const BLE_SERVICE_UUID = '00001101-0000-1000-8000-00805f9b34fb'; 
+        const BLE_CHARACTERISTIC_UUID = '00001101-0000-1000-8000-00805f9b34fb'; 
+        
+        // --- 2. ИНИЦИАЛИЗАЦИЯ КАРТЫ (ДОБАВЛЕНО INVALIDATESIZE) ---
         
         // Инициализация карты
         map = L.map('map').setView([49.097202, 132.479824], 15);
@@ -383,29 +393,14 @@
         // Добавляем стандартную карту по умолчанию
         currentLayer = mapLayers.standard;
         currentLayer.addTo(map);
-        
-        // Маркер козы
+
+        // Принудительная перерисовка карты для решения проблемы с отображением на мобильных устройствах
+        setTimeout(function() {
+            map.invalidateSize();
+            // Позиция пользователя (если есть разрешение)
+            map.locate({setView: true, maxZoom: 16});
+        }, 400); 
+
+        // Маркеры
         const kozaIcon = L.divIcon({
-            html: '<div style="background: #4CAF50; width: 50px; height: 50px; border-radius: 50%; border: 5px solid white; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 20px rgba(76,175,80,0.7);">🐐</div>',
-            iconSize: [50, 50],
-            iconAnchor: [25, 25]
-        });
-        
-        kozaMarker = L.marker([49.097202, 132.479824], { icon: kozaIcon }).addTo(map)
-            .bindPopup('<b>КОЗА #77</b><br>Ожидание данных...');
-        
-        // Маркер моей позиции
-        const myIcon = L.divIcon({
-            html: '<div style="background: #2196F3; width: 30px; height: 30px; border-radius: 50%; border: 4px solid white; box-shadow: 0 2px 15px rgba(33,150,243,0.7);"></div>',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-        });
-        
-        myMarker = L.marker([49.097202, 132.479824], { icon: myIcon }).addTo(map)
-            .bindPopup('<b>🏠 Моя позиция</b>');
-        
-        accuracyCircle = L.circle([49.097202, 132.479824], {
-            radius: 50,
-            color: '#2196F3',
-            fillColor: '#2196F3',
-            fillOpacity: 0.1
+            html: '<div style="background: #4CAF50; width: 50px; height: 50px; border-radius: 50%; border: 5px solid white; display: flex; align-
