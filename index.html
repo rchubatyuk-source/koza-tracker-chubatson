@@ -2,630 +2,113 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KOZA Tracker</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOZA Tracker - Тест BLE</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
             font-family: Arial, sans-serif;
             background: #1a1a1a;
             color: white;
-            overflow: hidden;
+            text-align: center;
+            padding-top: 50px;
         }
-        
-        #map {
-            width: 100vw;
-            height: 55vh;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1; 
-        }
-        
-        .info-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 45vh;
-            background: rgba(0, 0, 0, 0.95);
-            padding: 10px;
-            overflow-y: auto;
-            z-index: 10; 
-        }
-        
-        .status-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 13px;
-            padding: 6px;
-            background: #2a2a2a;
-            border-radius: 5px;
-        }
-        
-        .battery {
-            font-weight: bold;
-        }
-        
-        .battery.high { color: #4CAF50; }
-        .battery.medium { color: #FF9800; }
-        .battery.low { color: #F44336; }
-        
-        .btn {
-            width: 100%;
-            padding: 10px;
-            border: none;
+        .status {
+            padding: 15px;
+            margin: 20px auto;
             border-radius: 8px;
-            font-size: 13px;
+            width: 80%;
+            max-width: 300px;
             font-weight: bold;
-            cursor: pointer;
-            margin: 3px 0;
         }
-        
+        .disconnected { background: #b71c1c; }
+        .connected { background: #1b5e20; }
         .btn-connect {
             background: #4CAF50;
             color: white;
-        }
-        
-        .btn-disconnect {
-            background: #F44336;
-            color: white;
-        }
-        
-        .btn-zone {
-            background: #2196F3;
-            color: white;
-            font-size: 12px;
-            padding: 8px;
-        }
-        
-        .btn-polygon {
-            background: #9C27B0;
-            color: white;
-        }
-        
-        .btn-home {
-            background: #FF5722;
-            color: white;
-        }
-        
-        .btn:active {
-            transform: scale(0.98);
-        }
-        
-        .status {
-            text-align: center;
-            padding: 8px;
-            background: #2a2a2a;
+            padding: 10px 20px;
+            border: none;
             border-radius: 8px;
-            margin: 5px 0;
-            font-size: 12px;
-        }
-        
-        .status.connected { background: #1b5e20; }
-        .status.disconnected { background: #b71c1c; }
-        
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-            margin-top: 5px;
-        }
-        
-        h2 {
-            text-align: center;
-            margin-bottom: 8px;
-            font-size: 18px;
-        }
-        
-        .alarm-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(244, 67, 54, 0.95);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            animation: pulse 1s infinite;
-        }
-        
-        .alarm-overlay.active {
-            display: flex;
-        }
-        
-        .alarm-content {
-            text-align: center;
-            padding: 30px;
-        }
-        
-        .alarm-content h1 {
-            font-size: 32px;
-            margin-bottom: 20px;
-        }
-        
-        .alarm-content button {
-            padding: 15px 30px;
-            font-size: 18px;
-            background: white;
-            color: #F44336;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
             cursor: pointer;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-        
-        .distance-info {
-            background: #1565C0;
-            padding: 8px;
-            border-radius: 5px;
-            text-align: center;
-            margin: 5px 0;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        
-        .draw-mode {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(156, 39, 176, 0.95);
-            padding: 15px;
-            border-radius: 10px;
-            z-index: 1000;
-            display: none;
-        }
-        
-        .draw-mode.active {
-            display: block;
-        }
-        
-        .draw-mode button {
-            margin: 0 5px;
-            padding: 10px 15px;
-            background: white;
-            color: #9C27B0;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .zone-list {
-            background: #2a2a2a;
-            padding: 8px;
-            border-radius: 5px;
-            margin: 5px 0;
-            font-size: 12px;
-        }
-        
-        .zone-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px;
-            background: #3a3a3a;
-            margin: 3px 0;
-            border-radius: 3px;
-        }
-        
-        .zone-item button {
-            background: #F44336;
-            color: white;
-            border: none;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            cursor: pointer;
-        }
-        
-        .map-selector {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 5px;
-            border-radius: 8px;
-        }
-        
-        .map-selector button {
-            background: #2a2a2a;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            margin: 2px;
-            border-radius: 5px;
-            font-size: 11px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        .map-selector button.active {
-            background: #4CAF50;
-        }
-        
-        .version-label {
-            font-size: 10px;
-            opacity: 0.6;
-            margin-left: 5px;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
-    <div id="map"></div>
+    <h1>KOZA Tracker - Тест Bluetooth <span style="font-size: 0.7em; opacity: 0.6;">v2.0</span></h1>
     
-    <div class="map-selector">
-        <button id="mapStandard" class="active" onclick="changeMap('standard')">🗺️ Карта</button>
-        <button id="mapSatellite" onclick="changeMap('satellite')">🛰️ Спутник</button>
-        <button id="mapHybrid" onclick="changeMap('hybrid')">🌍 Гибрид</button>
+    <div id="status" class="status disconnected">
+        Статус: Отключено
     </div>
     
-    <div class="draw-mode" id="drawMode">
-        <div style="margin-bottom: 10px; font-weight: bold;">📐 Нажимайте на карту чтобы создать точки геозоны</div>
-        <button onclick="finishPolygon()">✓ Завершить</button>
-        <button onclick="cancelPolygon()">✕ Отмена</button>
-    </div>
-    
-    <div class="alarm-overlay" id="alarm">
-        <div class="alarm-content">
-            <h1>🚨 ТРЕВОГА! 🚨</h1>
-            <p id="alarmText" style="font-size: 20px; margin: 20px 0;"></p>
-            <button onclick="closeAlarm()">OK, ПОНЯЛ</button>
-        </div>
-    </div>
-    
-    <div class="info-panel">
-        <h2>🐐 KOZA Tracker <span class="version-label">v1.0</span></h2>
-        
-        <div id="status" class="status disconnected">
-            Не подключено
-        </div>
-        
-        <button id="connectBtn" class="btn btn-connect" onclick="connectBLE()">
-            🔗 Подключиться
-        </button>
-        
-        <button id="disconnectBtn" class="btn btn-disconnect" onclick="disconnectBLE()" style="display:none;">
-            ✂️ Отключиться
-        </button>
-        
-        <div class="distance-info" id="distance">
-            📏 Расстояние до козы: --
-        </div>
-        
-        <div class="status-row">
-            <span>🐐 ID:</span>
-            <span id="koza-id">--</span>
-        </div>
-        
-        <div class="status-row">
-            <span>📍 Координаты:</span>
-            <span id="coords" style="font-size: 11px;">--</span>
-        </div>
-        
-        <div class="status-row">
-            <span>🔋 Коза:</span>
-            <span class="battery" id="koza-battery">--</span>
-        </div>
-        
-        <div class="status-row">
-            <span>📱 База:</span>
-            <span class="battery" id="base-battery">--</span>
-        </div>
-        
-        <div class="status-row">
-            <span>🛰️ Спутники:</span>
-            <span id="satellites">--</span>
-        </div>
-        
-        <div class="controls">
-            <button class="btn btn-polygon" onclick="startDrawPolygon()">📐 Загородка</button>
-            <button class="btn btn-home" onclick="addHomeZone()">🏠 База</button>
-            <button class="btn btn-zone" onclick="centerOnKoza()">🎯 Коза</button>
-            <button class="btn btn-zone" onclick="clearZones()">🗑️ Очистить</button>
-        </div>
-        
-        <div class="zone-list" id="zoneList" style="display:none;">
-            <div style="font-weight: bold; margin-bottom: 5px;">Активные геозоны:</div>
-            <div id="zones"></div>
-        </div>
-    </div>
+    <button id="connectBtn" class="btn-connect" onclick="connectBLE()">
+        🔗 Поиск и подключение
+    </button>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <p style="margin-top: 30px; font-size: 0.8em;">
+        * Убедитесь, что вы используете **Chrome** на **Android** (или настольный Chrome по HTTPS) и ESP32 "База" включена.
+    </p>
+
     <script>
-        // --- 1. ПЕРЕМЕННЫЕ И НАСТРОЙКИ ---
-        let map, kozaMarker, myMarker, accuracyCircle;
         let bleDevice = null;
-        let bleCharacteristic = null;
-        let zones = [];
-        let kozaData = { lat: 0, lng: 0, id: 0, battery: 0, satellites: 0, baseBattery: 0, rssi: 0 };
-        let myPosition = { lat: 0, lng: 0 };
-        let alarmShown = {};
-        
-        let drawingMode = false;
-        let polygonPoints = [];
-        let tempMarkers = [];
-        let tempLines = [];
-        
-        let currentLayer = null;
-        let mapLayers = {};
-
-        // UUID для стандартного Bluetooth Serial Port Profile (SPP)
         const BLE_SERVICE_UUID = '00001101-0000-1000-8000-00805f9b34fb'; 
         const BLE_CHARACTERISTIC_UUID = '00001101-0000-1000-8000-00805f9b34fb'; 
-        
-        // --- 2. ИНИЦИАЛИЗАЦИЯ КАРТЫ ---
-        
-        map = L.map('map').setView([49.097202, 132.479824], 15);
-        
-        mapLayers.standard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        });
-        
-        mapLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            attribution: '© Esri'
-        });
-        
-        mapLayers.hybrid = L.layerGroup([
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 19
-            }),
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png', {
-                maxZoom: 19
-            })
-        ]);
-        
-        currentLayer = mapLayers.standard;
-        currentLayer.addTo(map);
 
-        // Принудительная перерисовка карты 
-        setTimeout(function() {
-            map.invalidateSize();
-            map.locate({setView: true, maxZoom: 16});
-        }, 400); 
-
-        // Маркеры и слои... (Оставлено без изменений)
-        const kozaIcon = L.divIcon({
-            html: '<div style="background: #4CAF50; width: 50px; height: 50px; border-radius: 50%; border: 5px solid white; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 20px rgba(76,175,80,0.7);">🐐</div>',
-            iconSize: [50, 50],
-            iconAnchor: [25, 25]
-        });
-        
-        kozaMarker = L.marker([49.097202, 132.479824], { icon: kozaIcon }).addTo(map)
-            .bindPopup('<b>КОЗА #77</b><br>Ожидание данных...');
-        
-        const myIcon = L.divIcon({
-            html: '<div style="background: #2196F3; width: 30px; height: 30px; border-radius: 50%; border: 4px solid white; box-shadow: 0 2px 15px rgba(33,150,243,0.7);"></div>',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-        });
-        
-        myMarker = L.marker([49.097202, 132.479824], { icon: myIcon }).addTo(map)
-            .bindPopup('<b>🏠 Моя позиция</b>');
-        
-        accuracyCircle = L.circle([49.097202, 132.479824], {
-            radius: 50,
-            color: '#2196F3',
-            fillColor: '#2196F3',
-            fillOpacity: 0.1
-        }).addTo(map);
-
-        map.on('locationfound', function(e) {
-            myPosition.lat = e.latlng.lat;
-            myPosition.lng = e.latlng.lng;
-
-            myMarker.setLatLng(e.latlng);
-            accuracyCircle.setLatLng(e.latlng).setRadius(e.accuracy);
-            updateDistance();
-        });
-        
-        // --- 3. ФУНКЦИИ BLE (ИСПРАВЛЕНО ДЛЯ ЛУЧШЕГО ПОИСКА) ---
-        
-        let bleBuffer = '';
-        let decoder = new TextDecoder('utf-8');
-
-        function handleData(event) {
-            let value = event.target.value;
-            let chunk = decoder.decode(value, {stream: true});
-            
-            bleBuffer += chunk;
-            
-            let newlineIndex;
-            while ((newlineIndex = bleBuffer.indexOf('\n')) !== -1) {
-                let jsonStr = bleBuffer.substring(0, newlineIndex).trim();
-                bleBuffer = bleBuffer.substring(newlineIndex + 1);
-
-                if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
-                    try {
-                        const data = JSON.parse(jsonStr);
-                        console.log("RX JSON:", data);
-                        updateKozaData(data);
-                    } catch (e) {
-                        console.error("JSON parsing error:", e, "String:", jsonStr);
-                    }
-                }
-            }
-        }
-
-        async function connectBLE() {
-            if (!navigator.bluetooth) {
-                alert('Ошибка: Ваш браузер не поддерживает Web Bluetooth. Используйте Chrome на Android.');
-                return;
-            }
-            
-            try {
-                document.getElementById('status').textContent = 'Поиск устройства...';
-                document.getElementById('status').className = 'status disconnected';
-
-                // ИЗМЕНЕНИЕ: Используем фильтр по имени устройства (KOZA_BASE) для лучшей совместимости поиска.
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'KOZA_' }], 
-                    optionalServices: [BLE_SERVICE_UUID] // Запрашиваем разрешение на этот сервис
-                });
-
-                document.getElementById('status').textContent = 'Подключение...';
-                
-                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-
-                const server = await bleDevice.gatt.connect();
-                
-                // Проверяем, поддерживает ли устройство запрошенный сервис
-                const service = await server.getPrimaryService(BLE_SERVICE_UUID);
-                
-                bleCharacteristic = await service.getCharacteristic(BLE_CHARACTERISTIC_UUID);
-                
-                await bleCharacteristic.startNotifications();
-                bleCharacteristic.addEventListener('characteristicvaluechanged', handleData);
-
-                // Обновление UI при успехе
-                document.getElementById('status').textContent = 'Подключено';
-                document.getElementById('status').className = 'status connected';
-                document.getElementById('connectBtn').style.display = 'none';
-                document.getElementById('disconnectBtn').style.display = 'block';
-                alert(`Успешно подключено к ${bleDevice.name}!`);
-                
-            } catch (error) {
-                console.error('BLE Connection Failed:', error);
-                let msg = error.message.includes('User cancelled') ? 
-                    'Пользователь отменил выбор устройства.' : 
-                    `Ошибка: ${error.message}. Проверьте, включен ли Bluetooth на Базе.`;
-                
-                document.getElementById('status').textContent = 'Ошибка подключения';
-                document.getElementById('status').className = 'status disconnected';
-                alert(msg);
-            }
+        function setStatus(text, isConnected = false) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = `Статус: ${text}`;
+            statusEl.className = isConnected ? 'status connected' : 'status disconnected';
+            document.getElementById('connectBtn').textContent = isConnected ? '✔ Подключено' : '🔗 Поиск и подключение';
+            document.getElementById('connectBtn').disabled = isConnected;
         }
 
         function onDisconnected(event) {
             console.log('BLE Device disconnected:', event.target.name);
-            document.getElementById('status').textContent = 'Отключено';
-            document.getElementById('status').className = 'status disconnected';
-            document.getElementById('connectBtn').style.display = 'block';
-            document.getElementById('disconnectBtn').style.display = 'none';
+            setStatus('Отключено');
+            bleDevice = null;
         }
 
-        function disconnectBLE() {
-            if (bleDevice && bleDevice.gatt.connected) {
-                bleDevice.gatt.disconnect();
-            } else {
-                onDisconnected({ target: bleDevice });
+        async function connectBLE() {
+            if (!navigator.bluetooth) {
+                alert('Ошибка: Ваш браузер не поддерживает Web Bluetooth.');
+                return;
             }
-        }
-
-        // --- 4. ФУНКЦИИ ОБНОВЛЕНИЯ UI и ЛОГИКА ---
-
-        function updateKozaData(data) {
-            kozaData = {
-                id: data.id || kozaData.id,
-                lat: data.lat || kozaData.lat,
-                lng: data.lng || kozaData.lng,
-                battery: data.battery || kozaData.battery,
-                satellites: data.satellites || kozaData.satellites,
-                baseBattery: data.base_battery || kozaData.baseBattery,
-                rssi: data.rssi || kozaData.rssi
-            };
-
-            const kozaLatLng = L.latLng(kozaData.lat, kozaData.lng);
-            kozaMarker.setLatLng(kozaLatLng);
-            kozaMarker.bindPopup(`<b>КОЗА #${kozaData.id}</b><br>Батарея: ${kozaData.battery}%<br>RSSI: ${kozaData.rssi}dBm`).openPopup();
-
-            // Обновление панели
-            document.getElementById('koza-id').textContent = kozaData.id;
-            document.getElementById('coords').textContent = `${kozaData.lat.toFixed(6)}, ${kozaData.lng.toFixed(6)}`;
-            document.getElementById('satellites').textContent = kozaData.satellites;
             
-            // Батарея Козы
-            const kozaBatElement = document.getElementById('koza-battery');
-            kozaBatElement.textContent = `${kozaData.battery}%`;
-            kozaBatElement.className = 'battery ' + (kozaData.battery > 70 ? 'high' : kozaData.battery > 30 ? 'medium' : 'low');
+            try {
+                setStatus('Поиск устройства...');
 
-            // Батарея Базы
-            const baseBatElement = document.getElementById('base-battery');
-            baseBatElement.textContent = `${kozaData.baseBattery}%`;
-            baseBatElement.className = 'battery ' + (kozaData.baseBattery > 70 ? 'high' : kozaData.baseBattery > 30 ? 'medium' : 'low');
-            
-            updateDistance();
-            checkGeoFences();
-        }
-        
-        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; 
-            const dLat = (lat2 - lat1) * (Math.PI / 180);
-            const dLon = (lon2 - lon1) * (Math.PI / 180);
-            const a = 
-                Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            let d = R * c; 
-            
-            if (d < 1) {
-                return `${(d * 1000).toFixed(0)} м`;
-            } else {
-                return `${d.toFixed(2)} км`;
+                // 1. Поиск устройства по имени KOZA_
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'KOZA_' }], 
+                    optionalServices: [BLE_SERVICE_UUID] 
+                });
+
+                setStatus('Подключение...');
+                
+                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+                // 2. Подключение
+                const server = await bleDevice.gatt.connect();
+                
+                // 3. Получение сервиса (для проверки)
+                const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+                
+                // 4. Получение характеристики (для готовности к чтению/записи)
+                await service.getCharacteristic(BLE_CHARACTERISTIC_UUID);
+                
+                setStatus('Подключено', true);
+                alert(`Успешно подключено к ${bleDevice.name}!`);
+                
+            } catch (error) {
+                console.error('BLE Connection Failed:', error);
+                
+                let msg = error.message.includes('User cancelled') ? 
+                    'Пользователь отменил выбор устройства.' : 
+                    `Ошибка: ${error.message}.`;
+
+                setStatus('Ошибка подключения');
+                alert(msg);
             }
         }
-        
-        function updateDistance() {
-            if (kozaData.lat && myPosition.lat) {
-                const distanceText = getDistanceFromLatLonInKm(
-                    kozaData.lat, kozaData.lng, myPosition.lat, myPosition.lng
-                );
-                document.getElementById('distance').textContent = `📏 Расстояние до козы: ${distanceText}`;
-            } else {
-                document.getElementById('distance').textContent = '📏 Расстояние до козы: --';
-            }
-        }
-
-        function checkGeoFences() {
-            // Логика проверки геозон
-        }
-
-        // --- 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (СТУБЫ) ---
-
-        function centerOnKoza() {
-            if (kozaData.lat && kozaData.lng) {
-                map.setView([kozaData.lat, kozaData.lng], 16);
-            }
-        }
-
-        function changeMap(type) {
-            map.removeLayer(currentLayer);
-            currentLayer = mapLayers[type];
-            currentLayer.addTo(map);
-
-            document.querySelectorAll('.map-selector button').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('map' + type.charAt(0).toUpperCase() + type.slice(1)).classList.add('active');
-        }
-
-        function startDrawPolygon() { console.log('Начало рисования полигона'); document.getElementById('drawMode').classList.add('active'); }
-        function finishPolygon() { console.log('Завершение полигона'); document.getElementById('drawMode').classList.remove('active'); }
-        function cancelPolygon() { console.log('Отмена полигона'); document.getElementById('drawMode').classList.remove('active'); }
-        function addHomeZone() { console.log('Добавление зоны Базы'); }
-        function clearZones() { console.log('Очистка зон'); }
-        function showAlarm(text) { 
-            document.getElementById('alarmText').textContent = text;
-            document.getElementById('alarm').classList.add('active'); 
-        }
-        function closeAlarm() { document.getElementById('alarm').classList.remove('active'); }
-
     </script>
 </body>
 </html>
