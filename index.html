@@ -61,7 +61,7 @@
             padding: 10px;
             border: none;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             margin: 3px 0;
@@ -92,13 +92,6 @@
         
         .status.connected { background: #1b5e20; }
         .status.disconnected { background: #b71c1c; }
-        
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-            margin-top: 5px;
-        }
         
         h2 {
             text-align: center;
@@ -160,7 +153,7 @@
         </div>
         
         <button id="connectBtn" class="btn btn-connect" onclick="connectBLE()">
-            🔗 Подключиться
+            🔗 Подключиться к KOZA_BASE
         </button>
         
         <button id="disconnectBtn" class="btn btn-disconnect" onclick="disconnectBLE()" style="display:none;">
@@ -195,11 +188,6 @@
             <span>🛰️ Спутники:</span>
             <span id="satellites">--</span>
         </div>
-        
-        <div class="controls">
-            <button class="btn btn-connect" onclick="centerOnKoza()">🎯 К козе</button>
-            <button class="btn btn-connect" onclick="centerOnMe()">📍 Ко мне</button>
-        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -216,7 +204,7 @@
         // Инициализация карты
         map = L.map('map').setView([49.097202, 132.479824], 15);
         
-        // Создаём разные слои карт
+        // Создаём слои карт
         mapLayers.standard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
@@ -236,7 +224,7 @@
             })
         ]);
         
-        // Добавляем стандартную карту по умолчанию
+        // Добавляем стандартную карту
         currentLayer = mapLayers.standard;
         currentLayer.addTo(map);
         
@@ -258,7 +246,7 @@
         });
         
         myMarker = L.marker([49.097202, 132.479824], { icon: myIcon }).addTo(map)
-            .bindPopup('<b>Я</b>');
+            .bindPopup('<b>🏠 Моя позиция</b>');
         
         accuracyCircle = L.circle([49.097202, 132.479824], {
             radius: 50,
@@ -285,7 +273,7 @@
         
         async function connectBLE() {
             try {
-                document.getElementById('status').textContent = 'Поиск устройства...';
+                document.getElementById('status').textContent = 'Поиск KOZA_BASE...';
                 
                 bleDevice = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'KOZA_BASE' }],
@@ -301,10 +289,12 @@
                 await bleCharacteristic.startNotifications();
                 bleCharacteristic.addEventListener('characteristicvaluechanged', handleData);
                 
-                document.getElementById('status').textContent = 'Подключено! ✓';
+                document.getElementById('status').textContent = 'Подключено! Ожидание данных...';
                 document.getElementById('status').className = 'status connected';
                 document.getElementById('connectBtn').style.display = 'none';
                 document.getElementById('disconnectBtn').style.display = 'block';
+                
+                console.log('BLE подключено!');
                 
             } catch (error) {
                 console.error('Ошибка BLE:', error);
@@ -364,22 +354,6 @@
                     Math.round(distance) + ' м' : 
                     (distance / 1000).toFixed(2) + ' км';
                 document.getElementById('distance').textContent = '📏 Расстояние до козы: ' + distText;
-            }
-        }
-        
-        function centerOnKoza() {
-            if (kozaData.lat !== 0 && kozaData.lng !== 0) {
-                map.setView([kozaData.lat, kozaData.lng], 16);
-            } else {
-                alert('❌ Нет координат козы!');
-            }
-        }
-        
-        function centerOnMe() {
-            if (myPosition.lat !== 0 && myPosition.lng !== 0) {
-                map.setView([myPosition.lat, myPosition.lng], 16);
-            } else {
-                alert('❌ Нет вашей позиции!');
             }
         }
         
