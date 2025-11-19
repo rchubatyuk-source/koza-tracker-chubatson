@@ -21,10 +21,11 @@
         
         #map {
             width: 100vw;
-            height: 55vh;
+            height: 50vh;
             position: absolute;
             top: 0;
             left: 0;
+            z-index: 1;
         }
         
         .info-panel {
@@ -32,10 +33,11 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 45vh;
+            height: 50vh;
             background: rgba(0, 0, 0, 0.95);
             padding: 10px;
             overflow-y: auto;
+            z-index: 2;
         }
         
         .status-row {
@@ -275,16 +277,30 @@
             try {
                 document.getElementById('status').textContent = 'Поиск KOZA_BASE...';
                 
+                console.log('Ищем BLE устройства...');
+                
                 bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'KOZA_BASE' }],
-                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                    acceptAllDevices: false,
+                    filters: [
+                        { name: 'KOZA_BASE' },
+                        { namePrefix: 'KOZA' }
+                    ],
+                    optionalServices: [
+                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+                    ]
                 });
                 
-                document.getElementById('status').textContent = 'Подключение...';
+                console.log('Устройство найдено:', bleDevice.name);
+                document.getElementById('status').textContent = 'Подключение к ' + bleDevice.name + '...';
                 
                 const server = await bleDevice.gatt.connect();
+                console.log('GATT подключён');
+                
                 const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                console.log('Service найден');
+                
                 bleCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+                console.log('Characteristic найден');
                 
                 await bleCharacteristic.startNotifications();
                 bleCharacteristic.addEventListener('characteristicvaluechanged', handleData);
@@ -294,12 +310,13 @@
                 document.getElementById('connectBtn').style.display = 'none';
                 document.getElementById('disconnectBtn').style.display = 'block';
                 
-                console.log('BLE подключено!');
+                console.log('BLE подключено успешно!');
                 
             } catch (error) {
                 console.error('Ошибка BLE:', error);
                 document.getElementById('status').textContent = 'Ошибка: ' + error.message;
                 document.getElementById('status').className = 'status disconnected';
+                alert('Не удалось подключиться!\n\nОшибка: ' + error.message + '\n\nУбедитесь что:\n1. База включена\n2. На базе горит "BLE READY"\n3. Bluetooth включён на телефоне');
             }
         }
         
